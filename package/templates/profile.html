@@ -1,0 +1,18 @@
+ {% extends 'base.html' %}
+
+{% block content %}
+{{ super() }}
+{% for cat, msg in get_flashed_messages(True) %}
+<div class="flash {{cat}}">{{msg}}</div>
+{% endfor %}
+<table border="0" class="profile-table">
+	<tr>
+	<td valign="top" class="profile-panel">
+		<p><a href="{{url_for('logout')}}">Logout</a>
+		<ul class="profile-info">
+		<li>Name: {{ current_user.first_name }}</li>
+		<li>Email: {{ current_user.email }}</li>
+		</ul>
+	</td></tr>
+</table>
+{% endblock %}

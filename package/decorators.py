@@ -2,7 +2,12 @@ import os
 
 from flask import jsonify, render_template
 
-from package import app
+from package import app, manager, User, menu
+
+
+@manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
 
 
 @app.errorhandler(400)
@@ -12,7 +17,7 @@ def bad_request(e):
 
 @app.errorhandler(404)
 def not_found(e):
-    return render_template(os.path.join(app.root_path, 'page404.html')), 404
+    return render_template('page404.html', title='Page not found', menu=menu), 404
 
 
 @app.errorhandler(405)

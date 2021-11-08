@@ -1,94 +1,93 @@
-from flask import render_template, request, redirect, session, url_for, jsonify
+from flask import render_template, request, redirect, session, url_for, jsonify, flash
+import bcrypt
 
-from package import app, db, Vehicle, Users
+# from package import db, app, Size
+from flask_login import login_user, logout_user, login_required, current_user
+
+from package import Size, app, User, menu
 from package.defs import *
+# from package.models import Vehicle, User
 
 
 @app.route('/db', methods=['POST', 'GET'])
-def insert():
-    new_vehicle = Vehicle(vehicle_name='spaceship')
-    db.session.add(new_vehicle)
-    db.session.commit()
-
-    res = db.session.query(Vehicle).all()
-    # for r in res:
-    #     print(r.vehicle_name)
-    return res
+@login_required
+def db():
+    return 'You are logged in'
 
 
 @app.route("/index")
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", title='Main page title', menu=menu)
 
 
 @app.route("/login", methods=['POST', 'GET'])
 def login():
-    if request.method == 'POST':
-        if 'userLogged' in session:
-            return redirect(url_for('profile', user_id=session['userLogged']))
-        elif request.form['email'] == 'dan@dan.us' and request.form['password'] == 'aa':
-            session['userLogged'] = request.form['email']
-            return redirect(url_for('profile', user_id=session['userLogged']))
+    email = request.form.get('email')
+    password = request.form.get('password')
+    next_page = request.args.get('next')
 
-    return render_template("login.html")
+    if email and password:
+        user = User.query.filter_by(email=email).first()
+        if user and str.encode(user.password) == bcrypt.hashpw(str.encode(password), str.encode(user.salt)):
+            login_user(user)
+            return url_for('profile_old', user_id=user.user_id)
+        else:
+            flash('Email or password is not correct', 'error')
+    else:
+        flash('Fill in email and password')
+
+    return render_template("login.html", title='Login page', menu=menu)
+
+
+@app.route("/register", methods=["POST", "GET"])
+def register():
+    if request.method == "POST":
+        if len(request.form['name']) > 4 and len(request.form['email']) > 4 \
+            and len(request.form['password']) > 4 and request.form['password'] == request.form['password2']:
+            hash = generate_password_hash(request.form['psw'])
+            res = db.addUser(request.form['name'], request.form['email'], hash)
+            if res:
+                flash("Вы успешно зарегистрированы", "success")
+                return redirect(url_for('login'))
+            else:
+                flash("Ошибка при добавлении в БД", "error")
+        else:
+            flash("Неверно заполнены поля", "error")
+
+    return render_template("register.html", title="Register", menu=menu)
+
+
+@app.route('/logout', methods=['GET', 'POST'])
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
+@app.after_request
+def redirect_to_signin(response):
+    if response.status_code == 401:
+        print(request.url)
+        link = url_for('login') + '?next=' + request.url
+        print(link)
+        return redirect(link)
+    return response
+
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template("profile.html", title="Профиль", menu=menu)
 
 
 @app.route('/profile/<user_id>')
-def profile(user_id):
-    if 'userLogged' not in session or session['userLogged'] != user_id:
-        abort(401)
-
-    res = db.session.query(Users).filter_by(email=user_id).first()
-
-    print(res)
-    return ''
-
-
-@app.route("/users/login", methods=['POST'])
-def users_login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        required_fields = {
-            'email': email,
-            'password': password
-        }
-        check_required_fields(required_fields)
-
-        check_user_exists('does not exist', email)
-        check_db_connection()
-
-        if not get_value_from_table('active', 'users', 'email', email):
-            abort(400, description='The user is deactivated')
-
-        sql_query = "SELECT salt, user_id, first_name, last_name, password FROM users WHERE email = '{0}'".format(email)
-        cursor.execute(sql_query)
-        conn.commit()
-        # res = cursor.fetchone()
-        salt, user_id, first_name, last_name, password_db = cursor.fetchone()
-
-        if password_is_valid(salt, password, password_db):
-            # if r.exists(email) == 0:
-            #     token = str(uuid.uuid4())
-            #     r.set(email, token, ex=600)
-            # else:
-            #     token = r.get(email)
-            #     r.expire(email, 600)
-
-            # Hello message (For fun :)
-            text = 'Hello, {{ name }}!'
-            template = Template(text)
-
-            result = {
-                "hello_message": template.render(name=first_name + " " + last_name),
-                "token": token,
-                "email": email,
-                "user_id": user_id
-            }
-            return jsonify(result)
-        else:
-            abort(401, description='you shall not pass :) password is invalid')
+@login_required
+def profile_old(user_id):
+    print('user_id ', user_id)
+    print('current_user ', current_user.user_id)
+    if user_id == current_user.user_id:
+        res = User.query.filter_by(user_id=user_id).first().first_name
+        return res
     else:
-        abort(405)
+        return redirect(url_for('login'))

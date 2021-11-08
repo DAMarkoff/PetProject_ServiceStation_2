@@ -3,6 +3,8 @@ from sqlalchemy import BigInteger, Boolean, Column, Date, DateTime, ForeignKey, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
+from package import db
+
 Base = declarative_base()
 metadata = Base.metadata
 
@@ -29,11 +31,18 @@ class Position(Base):
     delta_minutes = Column(Integer, nullable=False)
 
 
-class Size(Base):
-    __tablename__ = 'sizes'
+# class Size(Base):
+#     __tablename__ = 'sizes'
+#
+#     size_id = Column(Integer, primary_key=True)
+#     size_name = Column(Integer)
 
-    size_id = Column(Integer, primary_key=True)
-    size_name = Column(Integer)
+
+# class Size(db.Model):
+#     __tablename__ = 'sizes'
+#
+#     size_id = db.Column('size_id', Integer, primary_key=True)
+#     size_name = db.Column('size_name', Integer)
 
 
 class Task(Base):
@@ -52,11 +61,11 @@ class TireServiceOrderType(Base):
     service_type_name = Column(String, nullable=False)
 
 
-class UsersGroup(Base):
-    __tablename__ = 'users_groups'
-
-    group_id = Column(Integer, primary_key=True, server_default=text("nextval('users_groups_group_id_seq'::regclass)"))
-    group_name = Column(String, nullable=False)
+# class UsersGroup(Base):
+#     __tablename__ = 'users_groups'
+#
+#     group_id = Column(Integer, primary_key=True, server_default=text("nextval('users_groups_group_id_seq'::regclass)"))
+#     group_name = Column(String, nullable=False)
 
 
 class Vehicle(Base):
@@ -81,22 +90,23 @@ class Staff(Base):
     position = relationship('Position')
 
 
-class User(Base):
-    __tablename__ = 'users'
-
-    user_id = Column(BigInteger, primary_key=True, server_default=text("nextval('users_user_id_seq'::regclass)"))
-    first_name = Column(String(50), nullable=False)
-    last_name = Column(String(50), nullable=False)
-    email = Column(String(100), nullable=False)
-    phone = Column(String(30), nullable=False)
-    _pass = Column('pass', String(32))
-    active = Column(Boolean, nullable=False, server_default=text("true"))
-    password = Column(String, nullable=False)
-    salt = Column(String, nullable=False)
-    created = Column(DateTime)
-    group_id = Column(ForeignKey('users_groups.group_id'), nullable=False)
-
-    group = relationship('UsersGroup')
+# class User(db.Model, UserMixin):
+# class User(Base):
+#     __tablename__ = 'users'
+#
+#     user_id = Column(BigInteger, primary_key=True, server_default=text("nextval('users_user_id_seq'::regclass)"))
+#     first_name = Column(String(50), nullable=False)
+#     last_name = Column(String(50), nullable=False)
+#     email = Column(String(100), nullable=False)
+#     phone = Column(String(30), nullable=False)
+#     _pass = Column('pass', String(32))
+#     active = Column(Boolean, nullable=False, server_default=text("true"))
+#     password = Column(String, nullable=False)
+#     salt = Column(String, nullable=False)
+#     created = Column(DateTime)
+#     group_id = Column(ForeignKey('users_groups.group_id'), nullable=False)
+#
+#     group = relationship('UsersGroup')
 
 
 class Warehouse(Base):
